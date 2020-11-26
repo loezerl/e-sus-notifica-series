@@ -28,4 +28,8 @@ Se o município não for informado, o relatório contabilizará o estado inteiro
 python report.py -h
 ```
 
+Caso queira extrair as informações de todos os estados, basta executar sem passar os argumentos:
+```bash
+python report.py
+```
 Para quaisquer dúvidas, sinta-se livre para me contatar via e-mail ou Github.
