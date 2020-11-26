@@ -78,8 +78,10 @@ MUNICIPIO = args.m
 ORDEM_AGG = args.g
 OUTPUT_FILE = args.o
 OUTPUT_FILE_FORMAT = args.f
+PAIS_FLAG = False
 
-if ESTADO not in ESTADOS:
+
+if (ESTADO != "") and (ESTADO not in ESTADOS):
   raise Exception("Sigla de estado não reconhecida.")
 
 if ORDEM_AGG not in ['day', 'month']:
@@ -90,7 +92,9 @@ if OUTPUT_FILE_FORMAT not in ['csv', 'xlsx']:
 
 if ESTADO == "":
   print("Realizando a análise para todos os Estados.")
+  PAIS_FLAG=True
   MUNICIPIO_FLAG = False
+  OUTPUT_FILE = f"{OUTPUT_FILE}_BRASIL"
 elif MUNICIPIO != "":
   print(f"Realizando a análise para {MUNICIPIO}/{ESTADO}")
   OUTPUT_FILE = f"{OUTPUT_FILE}_{ESTADO}_{MUNICIPIO}"
@@ -100,7 +104,7 @@ else:
   OUTPUT_FILE = f"{OUTPUT_FILE}_{ESTADO}"
   MUNICIPIO_FLAG = False
 
-BASE_URL = "https://elasticsearch-saps.saude.gov.br/desc-notificacoes-esusve-{}/_search?pretty".format(ESTADO)
+BASE_URL_PAIS = "https://elasticsearch-saps.saude.gov.br/desc-notificacoes-esusve-"
 
 aggs = {
   "group_by_date":{
@@ -179,37 +183,56 @@ headers = {
 import time
 start_time = time.time()
 
-dataframes = []
-for query_id in querys:
-    query = {
-      "query": querys[query_id],
-      "sort": sort,
-      "aggs": aggs,
-      "size": QUERY_SIZE
-    }
-    query_time = time.time()
-    response = requests.request("GET", BASE_URL, headers = headers, auth=(USERNAME, PASSWRD), data = json.dumps(query))
-    json_resp = json.loads(response.text)
-    print("Query [{}] | Tempo: {:.3f} segundos".format(query_id, (time.time() - query_time)))
-    rows = []
-    try:
-      for el in json_resp['aggregations']['group_by_date']['buckets']:
-          rows.append({"Data": el['key_as_string'], query_id: el['doc_count']})
-    except Exception as e:
-      raise Exception("Query possivelmente inválida! Verifique se os dados parametrizados estão corretos. Razão: " + str(e))
 
-    df_q = pd.DataFrame(rows)
-    if len(df_q.index) != 0:
-      df_q.replace(np.nan, 0, inplace=True)
-      df_q["Data"] = (pd.to_datetime(df_q["Data"], format="%Y-%m-%d")).dt.date
-      dataframes.append(df_q)
-    else:
-      print(f"\tQuery {query_id} sem retorno. Não será incluída no relatório final!")
+if PAIS_FLAG == False:
+  ESTADOS = [ESTADO]
 
-df = dataframes[0]
+FIRST_TIME = True
+for estado in ESTADOS:
+  print(f"== Acessando os dados do estado: [{estado}] ==")
+  URL = BASE_URL_PAIS + f"{estado}/_search?pretty"
+  dataframes = []
+  for query_id in querys:
+      query = {
+        "query": querys[query_id],
+        "sort": sort,
+        "aggs": aggs,
+        "size": QUERY_SIZE
+      }
+      query_time = time.time()
+      response = requests.request("GET", URL, headers = headers, auth=(USERNAME, PASSWRD), data = json.dumps(query))
+      json_resp = json.loads(response.text)
+      print("Query [{}] | Tempo: {:.3f} segundos".format(query_id, (time.time() - query_time)))
+      rows = []
+      try:
+        for el in json_resp['aggregations']['group_by_date']['buckets']:
+            rows.append({"Data": el['key_as_string'], query_id: el['doc_count']})
+      except Exception as e:
+        raise Exception("Query possivelmente inválida! Verifique se os dados parametrizados estão corretos. Razão: " + str(e))
 
-for d in dataframes[1:]:
-  df = pd.merge(left=df, right=d, left_on=['Data'], right_on=['Data'], how='left')
+      df_q = pd.DataFrame(rows)
+      if len(df_q.index) != 0:
+        df_q.replace(np.nan, 0, inplace=True)
+        df_q["Data"] = (pd.to_datetime(df_q["Data"], format="%Y-%m-%d")).dt.date
+        dataframes.append(df_q)
+      else:
+        print(f"\tQuery {query_id} sem retorno. Não será incluída no relatório final!")
+  if FIRST_TIME:
+    df = dataframes[0]
+    for d in dataframes[1:]:
+      df = pd.merge(left=df, right=d, left_on=['Data'], right_on=['Data'], how='left')
+    FIRST_TIME = False
+  else:
+    df_estado = dataframes[0]
+    for d in dataframes[1:]:
+      df_estado = pd.merge(left=df_estado, right=d, left_on=['Data'], right_on=['Data'], how='left')
+    df = pd.concat([df, df_estado], axis=0)
+    
+  print(f'Estado [{estado}] processado.\n')
+
+if PAIS_FLAG:
+  df = df.groupby(by=['Data'], as_index=False).agg('sum')
+  df.sort_values(by='Data', inplace=True)
 
 if OUTPUT_FILE_FORMAT == "xlsx":
   df.to_excel(f'{OUTPUT_FILE}.{OUTPUT_FILE_FORMAT}', index=False)
