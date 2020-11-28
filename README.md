@@ -1,4 +1,4 @@
-## e-SUS Notifica
+# e-SUS Notifica
 
 
 Este script tem como objetivo facilitar a comunicação com a API do [e-SUS Notifica](https://opendatasus.saude.gov.br/dataset/casos-nacionais/resource/30c7902e-fe02-4986-b69d-906ca4c2ec36) fazendo queries server-side para construir uma base temporal.
@@ -11,11 +11,55 @@ As informações por dia calculadas são:
     [60, 69], [70, 79], [80, 999]
 - Quantidade de óbitos para RT-PCR positivos.
 
+## Instalando python3 e dependências via Anaconda
 
-Para utilizar é necessário ter python 3.7 com as bibliotecas: 
-`pandas numpy requests argparser`
+1. Baixe e instale o miniconda3 em seu computador: https://docs.conda.io/en/latest/miniconda.html
+2. Selecione a versão de acordo com o seu sistema operacional. Não é necessário baixar a versão com python 3.7!
+3. Após seguir todos os passos da instalação, procure pelo terminal do anaconda em seu computador digitando "Anaconda".
+4. Crie uma nova variável ambiente com python 3.7:
+```bash
+conda create -n py37 python=3.7 
+```
+5. Ative sua nova variável ambiente com python 3.7:
+```bash
+conda activate py37
+```
+_Usuários de MacOS_
+```bash
+source activate py37
+```
+6. Após ativar sua nova variável, ela deve ficar da seguinte maneira antes do caminho no bash `(py37)`.
+7. Instale as dependências executando a seguinte linha de comando:
+```bash
+conda install pandas numpy openpyxl requests
+```
+8. Navegue até o diretório do repositório e siga o tutorial abaixo para extrair as informações desejadas.
 
-Para executar:
+
+## Extraindo o relatório
+
+A extração do relatório com as informações listadas anteriormente pode ser realizada das seguintes maneiras:
+
+
+### Todos os Estados (Brasil)
+Para extrair as informações de todos estados basta executar o script da seguinte maneira:
+```bash
+python report.py
+```
+
+### Filtro por Estado
+
+```bash
+python report.py -e sigla_estado
+```
+Exemplo com os dados do Paraná:
+```bash
+python report.py -e pr
+```
+
+### Filtro por Município
+
+Para extrair as informações para determinado município, é necessário informar o estado e município.
 ```bash
 python report.py -e sigla_estado -m municipio
 ```
@@ -23,13 +67,14 @@ Exemplo:
 ```bash
 python report.py -e pr -m Cascavel
 ```
-Se o município não for informado, o relatório contabilizará o estado inteiro. Para mais informações sobre os demais parâmetros:
+Para municípios com nome composto, por exemplo: São Paulo e São José dos Pinhais, incluir o valor entre aspas duplas:
+```bash
+python report.py -e sp -m "São Paulo"
+```
+
+Para mais informações sobre os demais parâmetros:
 ```bash
 python report.py -h
 ```
 
-Caso queira extrair as informações de todos os estados, basta executar sem passar os argumentos:
-```bash
-python report.py
-```
 Para quaisquer dúvidas, sinta-se livre para me contatar via e-mail ou Github.
