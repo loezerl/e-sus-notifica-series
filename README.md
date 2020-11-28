@@ -35,6 +35,7 @@ conda install pandas numpy openpyxl requests
 ```
 8. Navegue até o diretório do repositório e siga o tutorial abaixo para extrair as informações desejadas.
 
+*Usuários do sistema operacional MacOS Big Sur poderão enfrentar problemas durante a instalação do ambiente python.*
 
 ## Extraindo o relatório
 
@@ -47,8 +48,14 @@ Para extrair as informações de todos estados basta executar o script da seguin
 python report.py
 ```
 
-### Filtro por Estado
+### Região do Brasil
+Caso você queira extrair as informações de uma determinada região, basta informar o nome dessa região ao parâmetro `-r`:
+```bash
+python report.py -r sul
+```
+O relatório resultante será da combinação de todos os estados presentes na região.
 
+### Filtro por Estado único
 ```bash
 python report.py -e sigla_estado
 ```
@@ -57,11 +64,18 @@ Exemplo com os dados do Paraná:
 python report.py -e pr
 ```
 
+### Filtro por Estados combinados
+Para extrair as informações de mais de um estado, basta informar as siglas dos estados desejados separados por vígula `,`:
+```bash
+python report.py -e pr,rs,sc
+```
+O relatório resultante será da combinação de todos os estados informados no parâmetro. **Não** é possível informar estados combinados **e** município.
+
 ### Filtro por Município
 
 Para extrair as informações para determinado município, é necessário informar o estado e município.
 ```bash
-python report.py -e sigla_estado -m municipio
+python report.py -e sigla_estado -m município
 ```
 Exemplo:
 ```bash

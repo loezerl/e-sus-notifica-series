@@ -41,6 +41,14 @@ ESTADOS = [
   'pi', 'ce', 'es',
 ]
 
+REGIOES = {
+  "norte": ['ac', 'ap', 'am', 'pa', 'ro', 'rr', 'to'],
+  "nordeste": ['al', 'ba', 'ce', 'ma', 'pb', 'pe', 'pi', 'rn', 'se'],
+  "centro-oeste": ['go', 'mt', 'ms', 'df'],
+  "sudeste": ['es', 'mg', 'rj', 'sp',],
+  "sul": ['pr', 'rs', 'sc'],
+}
+
 sort = [
   {"dataNotificacao": {"order": "desc"}}
 ]
@@ -64,7 +72,8 @@ parser = argparse.ArgumentParser(
     description='Esse script tem como funcionalidade se conectar na API e-SUS Notifica e gerar um relatório ordenado temporalmente \
       com informações sobre os testes RT-PCR positivos e negativos divididos por faixa etária. \
         Autor - Lucas Loezer (loezer.lucas@gmail.com)')
-parser.add_argument('-e', type=str, help="Estado. Informe a sigla do estado, caso não seja informado o relatório \
+parser.add_argument('-r', type=str, help="Região. Caso queira extrair a informação de uma região do Brasil. Valores possiveis: norte, nordeste, centro-oest, sudeste e sul.", default="")
+parser.add_argument('-e', type=str, help="Estado. Informe as siglas dos estados separado por vírgula. Caso não seja informado o relatório \
   estará contabilizando todos os estados brasileiros.", default="")
 parser.add_argument('-m', type=str, help="Município. Informe o nome do município, caso não seja informado o relatório \
   estará contabilizando todos os municípios do estado.", default="")
@@ -79,10 +88,15 @@ ORDEM_AGG = args.g
 OUTPUT_FILE = args.o
 OUTPUT_FILE_FORMAT = args.f
 PAIS_FLAG = False
+MUNICIPIO_FLAG = False
+ESTADOS_FLAG = False
+REGIAO = args.r.lower()
 
+ESTADOS_LISTADOS = [e for e in ESTADO.split(",") if e != ""]
 
-if (ESTADO != "") and (ESTADO not in ESTADOS):
-  raise Exception("Sigla de estado não reconhecida.")
+for e in ESTADOS_LISTADOS:
+  if (e != "") and (e not in ESTADOS):
+    raise Exception("Sigla de estado não reconhecida.")
 
 if ORDEM_AGG not in ['day', 'month']:
   raise Exception("Valor de intervalo de agrupamento inválido! Informe se o agrupamento será por dia [day] ou mês [month]. O valor default é por dia.")
@@ -90,19 +104,38 @@ if ORDEM_AGG not in ['day', 'month']:
 if OUTPUT_FILE_FORMAT not in ['csv', 'xlsx']:
   raise Exception("Formato de arquivo de saída inválido! Informe se o formato será CSV [csv] ou EXCEL [xlsx].")
 
-if ESTADO == "":
+if len(ESTADOS_LISTADOS) > 1 and MUNICIPIO != "":
+  raise Exception("Parâmetros inválidos! Não é possível gerar o relatório para mais de um estado e um município.")
+
+if REGIAO != "":
+  if not (REGIAO in REGIOES):
+    raise Exception("Região inválida! Caso queira extrair o relatório por região brasileira, informe um dos valores: norte, nordeste, sul, sudeste e centro-oeste.")
+  else:
+    ESTADOS_LISTADOS = REGIOES[REGIAO]
+
+if len(ESTADOS_LISTADOS) > 1:
+  print("Realizando a análise para os estados: ")
+  print(ESTADOS_LISTADOS)
+  ESTADOS_FLAG = True
+  estado_str = ""
+  for e in ESTADOS_LISTADOS:
+    estado_str += f"{e}-"
+  estado_str = estado_str[:-1] 
+  OUTPUT_FILE = f"{OUTPUT_FILE}_Estados_{estado_str}"
+elif len(ESTADOS_LISTADOS) <= 0:
   print("Realizando a análise para todos os Estados.")
   PAIS_FLAG=True
-  MUNICIPIO_FLAG = False
   OUTPUT_FILE = f"{OUTPUT_FILE}_BRASIL"
-elif MUNICIPIO != "":
+elif len(ESTADOS_LISTADOS) == 1 and MUNICIPIO != "":
   print(f"Realizando a análise para {MUNICIPIO}/{ESTADO}")
   OUTPUT_FILE = f"{OUTPUT_FILE}_{ESTADO}_{MUNICIPIO}"
   MUNICIPIO_FLAG = True
-else:
+elif len(ESTADOS_LISTADOS) == 1:
   print(f"Realizando a análise para o estado {ESTADO}")
   OUTPUT_FILE = f"{OUTPUT_FILE}_{ESTADO}"
   MUNICIPIO_FLAG = False
+else:
+  raise Exception("Opção inválida.")
 
 BASE_URL_PAIS = "https://elasticsearch-saps.saude.gov.br/desc-notificacoes-esusve-"
 
@@ -183,8 +216,9 @@ headers = {
 import time
 start_time = time.time()
 
-
-if PAIS_FLAG == False:
+if ESTADOS_FLAG:
+  ESTADOS = ESTADOS_LISTADOS
+elif not PAIS_FLAG:
   ESTADOS = [ESTADO]
 
 FIRST_TIME = True
@@ -230,7 +264,7 @@ for estado in ESTADOS:
     
   print(f'Estado [{estado}] processado.\n')
 
-if PAIS_FLAG:
+if PAIS_FLAG or ESTADOS_FLAG:
   df = df.groupby(by=['Data'], as_index=False).agg('sum')
   df.sort_values(by='Data', inplace=True)
 
