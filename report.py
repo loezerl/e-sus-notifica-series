@@ -50,7 +50,7 @@ REGIOES = {
 }
 
 sort = [
-  {"dataNotificacao": {"order": "desc"}}
+  {"dataNotificacao": {"order": "asc"}}
 ]
 
 FAIXAS_ETARIAS = [
@@ -154,12 +154,12 @@ for f in FAIXAS_ETARIAS:
   pcr_positivo_ranges["pcr-positivo-{}a{}".format(f[0], f[1])] = {}
   if MUNICIPIO_FLAG:
     pcr_positivo_ranges["pcr-positivo-{}a{}".format(f[0], f[1])]['query_string'] = {
-      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND idade:(>= {f[0]}) AND idade:(<= {f[1]})",
+      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND idade:(>= {f[0]}) AND idade:(<= {f[1]}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
       "default_field": "resultadoTeste"
     }
   else:
     pcr_positivo_ranges["pcr-positivo-{}a{}".format(f[0], f[1])]['query_string'] = {
-      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND idade:(>= {f[0]}) AND idade:(<= {f[1]})",
+      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND idade:(>= {f[0]}) AND idade:(<= {f[1]}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
       "default_field": "resultadoTeste"
     }
 
@@ -167,25 +167,25 @@ querys = {}
 if MUNICIPIO_FLAG:
   querys["pcr-positivo"] = {}
   querys["pcr-positivo"]["query_string"] = {
-      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO})",
+      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
       "default_field": "resultadoTeste"
   }
   querys["pcr-negativo"] = {}
   querys["pcr-negativo"]["query_string"] = {
-    "query": f"_exists_:resultadoTeste AND (Negativo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO})",
+    "query": f"_exists_:resultadoTeste AND (Negativo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
     "default_field": "resultadoTeste"
   }
 else:
   querys = {
       "pcr-positivo": {
         "query_string":{
-          "query": "_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR)",
+          "query": "_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
           "default_field": "resultadoTeste"
         }
       },
       "pcr-negativo": {
         "query_string": {
-          "query": "_exists_:resultadoTeste AND (Negativo) AND tipoTeste:(RT-PCR)",
+          "query": "_exists_:resultadoTeste AND (Negativo) AND tipoTeste:(RT-PCR) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
           "default_field": "resultadoTeste"
         }
       }
@@ -197,14 +197,14 @@ for k in pcr_positivo_ranges:
 if MUNICIPIO_FLAG:
   querys["obitos"] = {
     "query_string": {
-          "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND evolucaoCaso:(Óbito)",
+          "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND evolucaoCaso:(Óbito) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
           "default_field": "resultadoTeste"
     }
   }
 else:
   querys["obitos"] = {
     "query_string": {
-          "query": "_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND evolucaoCaso:(Óbito)",
+          "query": "_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND evolucaoCaso:(Óbito) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
           "default_field": "resultadoTeste"
     }
   }
