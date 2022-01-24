@@ -137,7 +137,7 @@ elif len(ESTADOS_LISTADOS) == 1:
 else:
   raise Exception("Opção inválida.")
 
-BASE_URL_PAIS = "https://elasticsearch-saps.saude.gov.br/desc-notificacoes-esusve-"
+BASE_URL_PAIS = "https://elasticsearch-saps.saude.gov.br/desc-esus-notifica-estado-"
 
 aggs = {
   "group_by_date":{
@@ -154,12 +154,12 @@ for f in FAIXAS_ETARIAS:
   pcr_positivo_ranges["pcr-positivo-{}a{}".format(f[0], f[1])] = {}
   if MUNICIPIO_FLAG:
     pcr_positivo_ranges["pcr-positivo-{}a{}".format(f[0], f[1])]['query_string'] = {
-      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND idade:(>= {f[0]}) AND idade:(<= {f[1]}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
+      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND municipio:({MUNICIPIO}) AND idade:(>={f[0]}) AND idade:(<={f[1]}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
       "default_field": "resultadoTeste"
     }
   else:
     pcr_positivo_ranges["pcr-positivo-{}a{}".format(f[0], f[1])]['query_string'] = {
-      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND idade:(>= {f[0]}) AND idade:(<= {f[1]}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
+      "query": f"_exists_:resultadoTeste AND (Positivo) AND tipoTeste:(RT-PCR) AND idade:(>={f[0]}) AND idade:(<={f[1]}) AND dataNotificacao:[2020-01-01T00:00:00.000Z TO *]",
       "default_field": "resultadoTeste"
     }
 
@@ -238,6 +238,8 @@ for estado in ESTADOS:
       json_resp = json.loads(response.text)
       print("Query [{}] | Tempo: {:.3f} segundos".format(query_id, (time.time() - query_time)))
       rows = []
+      if response.status_code != 200:
+        raise Exception("Não retornou sucesso na query! Razão: " + str(json_resp))
       try:
         for el in json_resp['aggregations']['group_by_date']['buckets']:
             rows.append({"Data": el['key_as_string'], query_id: el['doc_count']})
